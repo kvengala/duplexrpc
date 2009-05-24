@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rpc", "rpc.vcproj", "{AE9297CA-41F1-4527-9A2C-71FE6FA3E21A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LuguodeServer", "LuguodeServer\LuguodeServer.vcproj", "{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LuguodeClient", "LuguodeClient\LuguodeClient.vcproj", "{BE276435-0F8A-4924-B1EB-884E3201F5C8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AE9297CA-41F1-4527-9A2C-71FE6FA3E21A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AE9297CA-41F1-4527-9A2C-71FE6FA3E21A}.Debug|Win32.Build.0 = Debug|Win32
+		{AE9297CA-41F1-4527-9A2C-71FE6FA3E21A}.Release|Win32.ActiveCfg = Release|Win32
+		{AE9297CA-41F1-4527-9A2C-71FE6FA3E21A}.Release|Win32.Build.0 = Release|Win32
+		{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}.Debug|Win32.Build.0 = Debug|Win32
+		{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}.Release|Win32.ActiveCfg = Release|Win32
+		{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}.Release|Win32.Build.0 = Release|Win32
+		{BE276435-0F8A-4924-B1EB-884E3201F5C8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BE276435-0F8A-4924-B1EB-884E3201F5C8}.Debug|Win32.Build.0 = Debug|Win32
+		{BE276435-0F8A-4924-B1EB-884E3201F5C8}.Release|Win32.ActiveCfg = Release|Win32
+		{BE276435-0F8A-4924-B1EB-884E3201F5C8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
