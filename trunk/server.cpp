@@ -4,14 +4,10 @@
 #include "interface.h"
 using namespace boost;
 
-class Server
+class Server : public rpc::ServerPeer<Interface>
 {
 	string clientName;
 public:
-	Server( const shared_ptr<Interface>& conn )
-	{
-	}
-
 	string who_am_i(const string& name, const string& adj)
 	{
 		return name+" «Õ∑"+adj+"÷Ì£°";

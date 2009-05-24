@@ -4,7 +4,57 @@
 
 //Duplex RPC Interface (DRI for short)
 
-#define DRI_DECLARE_CALLBACK(f) void _ ## f() { if ( this->f ) this->f(); }
+namespace rpc
+{
+	template < class InterfaceT >
+	class ServerPeer
+	{
+	public:
+		virtual void on_connection_init( const RPC_SHARED_PTR<InterfaceT>& conn )
+		{
+			// Do some initialization work here, and save conn ptr to a local variable.
+			// DONT use conn to call RPC functions here; because RPC facilities are not yet ready.
+			// If you don't want to accept this client, call conn.close().
+		}
+
+		virtual void on_connection_in_place()
+		{
+			// Now the RPC functions are usable.
+			// Call function(s) to welcome the client if needed.
+		}
+
+		virtual void on_connection_closed()
+		{
+			// Invoked after this connection closed.
+			// Do some clean-up work here.
+		}
+	} ;
+
+	template < class InterfaceT >
+	class ClientPeer
+	{
+	public:
+		virtual void on_connected( const boost::system::error_code& err,
+			const RPC_SHARED_PTR<InterfaceT>& conn )
+		{
+			// Connection succeeded if ( !err ) .
+			// Do some initialization work here, and save conn ptr to a local variable.
+			// DONT use conn to call RPC functions here; because RPC facilities are not yet ready.
+		}
+
+		virtual void on_connection_in_place()
+		{
+			// Now the RPC functions are usable.
+		}
+
+		virtual void on_connection_closed()
+		{
+			// Invoked after this connection closed.
+			// Do some clean-up work here.
+		}
+	} ;
+};
+
 
 #define DRI_BEGIN(IName) \
 class IName{\
@@ -12,10 +62,6 @@ class IName{\
 public:\
 	typedef IName this_type;\
 	typedef RPC_SHARED_PTR<this_type> this_type_shared_ptr;\
-	RPC_FUNCTION_CLASS<void(void)> on_connection_in_place, on_connection_closed;\
-private:\
-	DRI_DECLARE_CALLBACK(on_connection_in_place);\
-	DRI_DECLARE_CALLBACK(on_connection_closed);\
 public:\
 	IName(const rpc::peer_weak_ptr& the_peer):wp(the_peer){}\
 	bool close()\
@@ -29,10 +75,11 @@ public:\
 	template<class ObjT> static void on_accepted( const RPC_SHARED_PTR<rpc::peer>& this_peer )\
 	{\
 		this_type_shared_ptr conn( new this_type( this_peer ) );\
-		RPC_SHARED_PTR<ObjT> obj( new ObjT( conn ) );\
+		RPC_SHARED_PTR<ObjT> obj( new ObjT() );\
+		obj->on_connection_init( conn );\
 		rpc::function_set_ptr p_functions( new rpc::function_set() );\
-		this_peer->on_peer_started = RPC_BIND_FUNCTION( &this_type::_on_connection_in_place, conn );\
-		this_peer->on_peer_closed = RPC_BIND_FUNCTION( &this_type::_on_connection_closed, conn );
+		this_peer->on_peer_started = RPC_BIND_FUNCTION( &ObjT::on_connection_in_place, obj );\
+		this_peer->on_peer_closed = RPC_BIND_FUNCTION( &ObjT::on_connection_closed, obj );
 
 #define DRI_SERVER_LISTEN_END \
 		this_peer->set_function_set( p_functions );\
@@ -55,8 +102,8 @@ public:\
 		else\
 		{\
 			this_type_shared_ptr conn( new this_type( this_peer ) );\
-			this_peer->on_peer_started = RPC_BIND_FUNCTION( &this_type::_on_connection_in_place, conn );\
-			this_peer->on_peer_closed = RPC_BIND_FUNCTION( &this_type::_on_connection_closed, conn );\
+			this_peer->on_peer_started = RPC_BIND_FUNCTION( &ObjT::on_connection_in_place, obj );\
+			this_peer->on_peer_closed = RPC_BIND_FUNCTION( &ObjT::on_connection_closed, obj );\
 			obj->on_connected( err, conn );\
 		}\
 	}\
@@ -67,6 +114,11 @@ public:\
 #define DRI_CLIENT_CONNECT_END \
 		rpc::peer::connect( host, port, p_functions, \
 			RPC_BIND_FUNCTION( &this_type::on_connected<ObjT>, RPC__1, RPC__2, obj ) );\
+	}\
+	template <class ObjT> static void connect( const char* host, int port )\
+	{\
+		ObjT obj;\
+		connect( host, port, &obj );\
 	}
 
 #define _DRI_INIT_R_(RetT, FuncName, FuncSig, AddSig)\
