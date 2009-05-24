@@ -179,7 +179,6 @@ void CLuguodeClientDlg::on_connected( const boost::system::error_code& err, cons
 	else
 	{
 		conn = conn_;
-		conn->on_connection_closed = bind( &CLuguodeClientDlg::on_connection_closed, this );
 		AppendToRichEdit( L"已连接上服务器。\r\n" );
 		m_SendOrConnect.SetWindowText( L"发送消息" );
 	}

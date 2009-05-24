@@ -6,7 +6,7 @@
 #include "interface.h"
 using namespace boost;
 
-class Client
+class Client : public rpc::ClientPeer<Interface>
 {
 	shared_ptr<Interface> conn;
 public:
@@ -20,7 +20,6 @@ public:
 		{
 			cout<<"连接成功。"<<endl;
 			conn = conn_;
-			conn->on_connection_in_place = bind( &Client::on_connection_in_place, this );
 		}
 	}
 
@@ -80,6 +79,5 @@ public:
 
 void start_client()
 {
-	Client client;
-	Interface::connect( "localhost", 7844, &client );
+	Interface::connect<Client>( "localhost", 7844 );
 }

@@ -15,7 +15,7 @@
 
 #define MY_WM_NEW_MESSAGE (WM_USER + 1125)
 // CLuguodeClientDlg 对话框
-class CLuguodeClientDlg : public CDialog
+class CLuguodeClientDlg : public CDialog, public rpc::ClientPeer<LuguodeInterface>
 {
 // 构造
 public:

@@ -9,7 +9,7 @@
 using namespace std;
 using namespace boost;
 
-class LuguodePeer : public enable_shared_from_this<LuguodePeer>
+class LuguodePeer : public enable_shared_from_this<LuguodePeer>, public rpc::ServerPeer<LuguodeInterface>
 {
 private:
 	static mutex static_mtx;
@@ -23,14 +23,10 @@ private:
 	LuguodePeerWeakPtr stranger;
 	bool talking;
 public:
-	LuguodePeer( const shared_ptr<LuguodeInterface>& conn )
+	void on_connection_init( const shared_ptr<LuguodeInterface>& conn )
 	{
 		talking = false;
 		client_connection = conn;
-		client_connection->on_connection_in_place = 
-			bind( &LuguodePeer::welcome_client, this );
-		client_connection->on_connection_closed = 
-			bind( &LuguodePeer::on_connection_closed, this );
 	}
 
 	void talk( const std::wstring& msg )
@@ -51,7 +47,7 @@ public:
 		}
 	}
 
-	void welcome_client()
+	void on_connection_in_place()
 	{
 		{
 			mutex::scoped_lock lck(static_mtx);
