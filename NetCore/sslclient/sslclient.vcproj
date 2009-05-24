@@ -2,11 +2,11 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="LuguodeServer"
-	ProjectGUID="{CED9F0D6-CBC3-4445-8B19-B345B0C289F6}"
-	RootNamespace="LuguodeServer"
+	Name="sslclient"
+	ProjectGUID="{E9849803-380C-4C1A-9BEB-6DC9C2B518F2}"
+	RootNamespace="Music"
 	Keyword="Win32Proj"
-	TargetFrameworkVersion="196613"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -21,6 +21,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			InheritedPropertySheets="..\..\..\BuildRules\vsprops\private_d.vsprops;..\..\..\BuildRules\vsprops\boost_d.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -40,14 +41,16 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Zm120"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Share&quot;;&quot;$(SolutionDir)&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				BufferSecurityCheck="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -61,9 +64,15 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32.lib ssleay32.lib"
+				OutputFile="$(SolutionDir)bin\$(ProjectName).exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="0"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -93,6 +102,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			InheritedPropertySheets="..\..\..\BuildRules\vsprops\private_r.vsprops;..\..\..\BuildRules\vsprops\boost_r.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -113,14 +123,21 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/Zm120"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalOptions="-MP"
+				Optimization="1"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="2"
+				OmitFramePointers="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Share&quot;;&quot;$(SolutionDir)&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600"
+				StringPooling="true"
 				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="2"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="0"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -134,11 +151,18 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32.lib ssleay32.lib"
+				OutputFile="$(SolutionDir)bin\$(ProjectName).exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)lib&quot;"
+				GenerateManifest="true"
+				UACExecutionLevel="2"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="0"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -173,7 +197,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\LuguodeServer.cpp"
+				RelativePath=".\sslclient.cpp"
 				>
 			</File>
 			<File
@@ -181,14 +205,6 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -206,24 +222,12 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
-			<File
-				RelativePath=".\targetver.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-		</Filter>
-		<Filter
-			Name="network interface"
-			>
-			<File
-				RelativePath=".\LuguodeInterface.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
