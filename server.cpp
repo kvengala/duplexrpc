@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "server.h"
 
 #define DRI_IS_SERVER

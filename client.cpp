@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "client.h"
 #include <random>
 #include <ctime>

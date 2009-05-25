@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "server.h"
 #include "client.h"
 #include <boost/thread.hpp>
