@@ -28,15 +28,22 @@ public:
 	{
 		conn->set_my_name( "挫比", &Client::on_set_my_name );
 		conn->get_my_name( &Client::on_get_my_name );
-		cout<<"调用who_am_i(\"abc\"):。"<<endl;
-		int loop = 100;
-		const char* adjs[] = {"小", "大白", "小肥", "小胖"};
-		std::tr1::minstd_rand gen((unsigned long)time(NULL));
-		std::tr1::uniform_int<int> rnd(0, 3);
-		while (loop--)
-		{
-			conn->who_am_i(boost::lexical_cast<string>(loop), adjs[rnd(gen)], &Client::on_who_am_i );
-		}
+		conn->set_my_name( "挫比1", &Client::on_set_my_name );
+		conn->get_my_name( &Client::on_get_my_name );
+		conn->set_my_name( "挫比2", &Client::on_set_my_name );
+		conn->get_my_name( &Client::on_get_my_name );
+		conn->set_my_name( "挫比3", &Client::on_set_my_name );
+		conn->get_my_name( &Client::on_get_my_name );
+		conn->set_my_name( "挫比4", &Client::on_set_my_name );
+		conn->get_my_name( &Client::on_get_my_name );
+		conn->set_my_name( "挫比5", &Client::on_set_my_name );
+		conn->get_my_name( &Client::on_get_my_name );
+		conn->who_am_i("abc", "123", &Client::on_who_am_i );
+		conn->who_am_i("abcd", "1234", &Client::on_who_am_i );
+		conn->who_am_i("abce", "12345", &Client::on_who_am_i );
+		conn->who_am_i("abcf", "123456", &Client::on_who_am_i );
+		conn->who_am_i("abcg", "1234567", &Client::on_who_am_i );
+		conn->who_am_i("abch", "12345678", &Client::on_who_am_i );
 	}
 
 	static void on_set_my_name( const remote_call_error& err )

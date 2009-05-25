@@ -32,8 +32,7 @@ public:
 	typedef boost::function<void(const boost::system::error_code& error)> Handler;
 	/// Constructor.
 	connection(boost::asio::io_service& io_service)
-		: connection_base(io_service),
-		write_pending_(false), read_pending_(false)
+		: connection_base(io_service)
 	{
 	}
 
@@ -79,46 +78,47 @@ public:
 		header_stream << outbound_data_;
 		*outbound_header_ = header_stream.str();
 
-		if (write_pending_ == true)
+		wop_buf_.push_back(WOpElem(outbound_header_, handler));
+
+
+		//尝试获得写锁。
+		if ( writemtx_.try_lock() )
 		{
-			wop_buf_.push_back(WOpElem(outbound_header_, handler));
+			//如果获得了，说明没有在写数据。那么开始写。
+			try_write();
 		}
-		else
-		{
-			write_pending_ = true;
-			boost::asio::async_write(*this, boost::asio::buffer(*outbound_header_), 
-				boost::bind(&connection::handle_async_write, this, boost::asio::placeholders::error,
-				outbound_header_, handler));
-		}
+		//没有获得，说明已经有异步写操作了。这次放入的数据将会被已有的异步写操作写入连接中。
+
 	}
 
 private:
-	/// free the data buffer after the async_write complete
-	void handle_async_write(const boost::system::error_code& error,
-		buffer_ptr dataPtr,
-		Handler handler)
+	void try_write()
 	{
 		boost::recursive_mutex::scoped_lock lck(wmtx_);
 
-		if (wop_buf_.empty() == false)
-			wop_buf_.pop_back();
-
-		if (wop_buf_.empty())
+		if ( !wop_buf_.empty() )
 		{
-			write_pending_ = false;
+			WOpElem curWOpElem = wop_buf_.front();
+			wop_buf_.pop_front();
+
+			boost::asio::async_write(*this, boost::asio::buffer(*(curWOpElem.dataPtr_)), 
+				boost::bind(&connection::handle_async_write, this, boost::asio::placeholders::error,
+				curWOpElem.dataPtr_, curWOpElem.opHandler_));
 		}
 		else
 		{
-			write_pending_ = true;
-
-			WOpContainer::iterator itor = wop_buf_.begin();
-
-			boost::asio::async_write(*this, boost::asio::buffer(*(itor->dataPtr_)), 
-				boost::bind(&connection::handle_async_write, this, boost::asio::placeholders::error,
-				itor->dataPtr_, itor->opHandler_));
+			writemtx_.unlock();
 		}
+	}
 
-		handler(error); //放在最后执行,防止handler里面删除了connection.
+	void handle_async_write( const boost::system::error_code& error,
+		buffer_ptr dataPtr, Handler handler )
+	{
+		boost::recursive_mutex::scoped_lock lck(wmtx_);
+
+		handler( error );
+
+		try_write();
 	}
 
 public:
@@ -130,19 +130,12 @@ public:
 
 		buffer_ptr inbound_header_(new std::string(header_length, 0));
 
-		if (read_pending_ == true)
-		{
-			rop_buf_.push_back(ROpElem(inbound_header_, handler, reinterpret_cast<void*>(&t)));
-		}
-		else
-		{
-			read_pending_ = true;
-			// Issue a read operation to read exactly the number of bytes in a header.
-			boost::asio::async_read(*this, 
-				boost::asio::buffer(const_cast<char*>(inbound_header_->c_str ()), header_length),
-				boost::bind(&connection::handle_read_header<T>,
-				this, boost::asio::placeholders::error, boost::ref(t), inbound_header_, handler));
-		}
+		rop_buf_.push_back(ROpElem(inbound_header_, handler, reinterpret_cast<void*>(&t)));
+		// Issue a read operation to read exactly the number of bytes in a header.
+		boost::asio::async_read(*this, 
+			boost::asio::buffer(const_cast<char*>(inbound_header_->c_str ()), header_length),
+			boost::bind(&connection::handle_read_header<T>,
+			this, boost::asio::placeholders::error, boost::ref(t), inbound_header_, handler));
 	}
 
 
@@ -153,8 +146,6 @@ private:
 		T& t, buffer_ptr headPtr, Handler handler)
 	{
 		boost::recursive_mutex::scoped_lock lck(rmtx_);
-
-		assert (read_pending_);
 
 		if (err)
 		{
@@ -230,13 +221,10 @@ private:
 	void freeReadOpAndStartNew()
 	{
 		//free the read op
-		if (rop_buf_.empty() == false)
-			rop_buf_.pop_back();
+		rop_buf_.pop_front();
 
 		if (rop_buf_.empty() == false)
 		{
-			read_pending_ = true;
-
 			ROpContainer::iterator itor = rop_buf_.begin();
 
 			// Issue a read operation to read exactly the number of bytes in a header.
@@ -247,10 +235,6 @@ private:
 				boost::ref(*reinterpret_cast<T*>(itor->dataPos_)),
 				itor->dataPtr_, itor->opHandler_));
 		}
-		else
-		{
-			read_pending_ = false;
-		}
 	}
 
 private:
@@ -259,6 +243,7 @@ private:
 
 	/// make async_write thread safe
 	boost::recursive_mutex wmtx_;
+	boost::try_mutex writemtx_;
 
 	/// make async_read thread safe
 	boost::recursive_mutex rmtx_;
@@ -294,12 +279,6 @@ private:
 	typedef std::deque<ROpElem> ROpContainer;
 	/// pending read operation
 	ROpContainer rop_buf_;
-
-	/// is there any pending write
-	bool write_pending_;
-
-	/// is there any pending read
-	bool read_pending_;
 };
 
 typedef boost::shared_ptr<connection> connection_ptr;
