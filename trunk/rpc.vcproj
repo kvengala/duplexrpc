@@ -21,7 +21,6 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\BuildRules\vsprops\boost_d.vsprops;..\..\BuildRules\vsprops\private_d.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -94,7 +93,6 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\..\BuildRules\vsprops\boost_r.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -253,6 +251,10 @@
 		<Filter
 			Name="rpc"
 			>
+			<File
+				RelativePath=".\rpc\connection.hpp"
+				>
+			</File>
 			<File
 				RelativePath=".\rpc\rpc.hpp"
 				>
