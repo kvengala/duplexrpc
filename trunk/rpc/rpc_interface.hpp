@@ -58,21 +58,22 @@ namespace rpc
 
 #define DRI_BEGIN(IName) \
 class IName{\
-	rpc::peer_weak_ptr wp;\
+	typedef rpc::peer<> peer_type;\
+	peer_type::peer_weak_ptr wp;\
 public:\
 	typedef IName this_type;\
 	typedef RPC_SHARED_PTR<this_type> this_type_shared_ptr;\
 public:\
-	IName(const rpc::peer_weak_ptr& the_peer):wp(the_peer){}\
+	IName(const peer_type::peer_weak_ptr& the_peer):wp(the_peer){}\
 	bool close()\
 	{\
-		rpc::peer_ptr p = wp.lock();\
+		peer_type::peer_ptr p = wp.lock();\
 		if(p) p->close();\
 		return p;\
 	}
 
 #define DRI_SERVER_LISTEN_BEGIN \
-	template<class ObjT> static void on_accepted( const RPC_SHARED_PTR<rpc::peer>& this_peer )\
+	template<class ObjT> static void on_accepted( const RPC_SHARED_PTR<peer_type>& this_peer )\
 	{\
 		this_type_shared_ptr conn( new this_type( this_peer ) );\
 		RPC_SHARED_PTR<ObjT> obj( new ObjT() );\
@@ -86,13 +87,13 @@ public:\
 	}\
 	template <class ObjT> static void listen( int port )\
 	{\
-		rpc::peer::listen( port, rpc::function_set_ptr(),\
+		peer_type::listen( port, rpc::function_set_ptr(),\
 			RPC_BIND_FUNCTION( &this_type::on_accepted<ObjT>, RPC__1 )\
 		);\
 	}
 
 #define DRI_CLIENT_CONNECT_BEGIN \
-	template<class ObjT> static void on_connected( const boost::system::error_code& err, const rpc::peer_ptr& this_peer,\
+	template<class ObjT> static void on_connected( const boost::system::error_code& err, const peer_type::peer_ptr& this_peer,\
 		ObjT* obj )\
 	{\
 		if ( err )\
@@ -112,7 +113,7 @@ public:\
 		rpc::function_set_ptr p_functions( new rpc::function_set() );
 
 #define DRI_CLIENT_CONNECT_END \
-		rpc::peer::connect( host, port, p_functions, \
+		peer_type::connect( host, port, p_functions, \
 			RPC_BIND_FUNCTION( &this_type::on_connected<ObjT>, RPC__1, RPC__2, obj ) );\
 	}\
 	template <class ObjT> static void connect( const char* host, int port )\
@@ -150,7 +151,7 @@ public:\
 #define _DRI_CALL_R_MID(FuncName, RetT) \
 	const rpc::detail::result_handler_type<RetT>::type& on_ ## FuncName )\
 	{\
-		rpc::peer_ptr p = wp.lock();\
+		peer_type::peer_ptr p = wp.lock();\
 		if(p) p->remote_call<RetT>( #FuncName, 
 
 #define _DRI_CALL_R_END(FuncName) \

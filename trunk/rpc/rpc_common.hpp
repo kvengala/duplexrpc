@@ -55,8 +55,8 @@ namespace rpc{
 #endif
 
 	/** 使用的enable_shared_from_this类。 */
-#ifndef RPC_ENABEL_SHARED_FROM_THIS
-# define RPC_ENABEL_SHARED_FROM_THIS boost::enable_shared_from_this
+#ifndef RPC_ENABLE_SHARED_FROM_THIS
+# define RPC_ENABLE_SHARED_FROM_THIS boost::enable_shared_from_this
 #endif
 
 	/** 使用的bind类。 */

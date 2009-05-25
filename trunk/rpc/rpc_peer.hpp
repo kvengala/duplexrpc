@@ -2,6 +2,7 @@
 #include "rpc_function_set.hpp"
 #include <queue>
 #include <boost/lexical_cast.hpp>
+#include "connection.hpp"
 
 /**
  * 此命名空间包括了此远程过程调用(RPC)实现的所有代码。
@@ -124,33 +125,45 @@ namespace rpc{
 
         typedef RPC_SHARED_PTR<RetValUnserializerBase> RetValUnserializerPtr;
     }
+
+	/**
+	 * TransmitterConcept: 
+	 * {
+	 *     void async_read( std::string& data, const function<void(const boost::system::error_code& error)>& handler );
+	 *     void async_write( const std::string& data, const function<void(const boost::system::error_code& error)>& handler );
+	 * }
+	 */
+
     /**
      * RPC连接的一端(peer)。每一个RPC连接都对应于两个peer。
      * 每一个peer既可以向对方提供RPC函数调用服务，也可以请求调用对方提供的RPC函数。
-	 * 在外部不需要保存peer的智能指针，因为
+	 * 在外部不可以保存peer的shared_ptr，因为这会破坏peer在连接中断自动析构的特性。
+	 * @param TransmitterType A type of TransmitterConcept.
+	 * concept TransmitterConcept : public boost::asio::ip::tcp::socket
+	 * {
+	 *     void async_read( buffer_type& data, const function<void(const boost::system::error_code& error)>& handler );
+	 *     void async_write( const buffer_type& data, const function<void(const boost::system::error_code& error)>& handler );
+	 * }
      */
-	class peer : public boost::noncopyable, public RPC_ENABEL_SHARED_FROM_THIS<peer>
+	template< class TransmitterType = connection >
+	class peer : public boost::noncopyable, public RPC_ENABLE_SHARED_FROM_THIS<peer<TransmitterType> >
     {
 		typedef std::string buffer_type;
 		typedef RPC_SHARED_PTR<std::string> buffer_ptr;
         typedef RPC_SHARED_PTR<function_set> function_set_ptr;
         function_set_ptr p_func_set;
-		typedef std::queue<detail::RetValUnserializerPtr> id2ser_queue_type;
-		typedef boost::asio::ip::tcp::socket socket_type;
+		typedef std::queue<detail::RetValUnserializerPtr> ser_queue_type;
+		typedef TransmitterType transmitter_type;
 		typedef boost::asio::ip::tcp::acceptor acceptor_type;
 		typedef boost::asio::ip::tcp::endpoint endpoint_type;
 
-		typedef std::queue<buffer_ptr > write_buf_queue_t;
-		write_buf_queue_t write_buf_queue;		//需要发送的数据队列。将被逐个发送。
-		boost::try_mutex write_mutex;				//只能有一个线程在写。
-
-        id2ser_queue_type id2serializerqueue;
+        ser_queue_type serializerqueue;
 		volatile bool peer_started;
-		size_t read_size;
 		buffer_type read_buffer;
     public:
-		typedef RPC_SHARED_PTR<peer> peer_ptr;
-		typedef RPC_WEAK_PTR<peer> peer_weak_ptr;
+		typedef peer<TransmitterType> this_type;
+		typedef RPC_SHARED_PTR<this_type> peer_ptr;
+		typedef RPC_WEAK_PTR<this_type> peer_weak_ptr;
 		/**
 		* 异常：peer已经开始。
 		*/
@@ -174,7 +187,7 @@ namespace rpc{
 		/* Callback functions: */
 		RPC_FUNCTION_CLASS<void(void)> on_peer_started, on_peer_closed;
     private:
-		socket_type socket_;
+		transmitter_type socket_;
 	private:
 
         /**
@@ -184,11 +197,11 @@ namespace rpc{
          * @see set_connection
          */
 		peer(boost::asio::io_service& acceptor_io_service, const function_set_ptr& p_functions)
-			:socket_(acceptor_io_service), p_func_set(p_functions), peer_started(false), min_usable_id(0)
+			:socket_(acceptor_io_service), p_func_set(p_functions), peer_started(false)
 		{
         }
 
-		socket_type& socket()
+		transmitter_type& socket()
 		{
 			return socket_;
 		}
@@ -208,7 +221,7 @@ namespace rpc{
 			}
 			void start_accept()
 			{
-				peer_ptr p(new peer(acceptor_.get_io_service(), p_functions_));
+				peer_ptr p(new this_type(acceptor_.get_io_service(), p_functions_));
 				acceptor_.async_accept(p->socket(),
 					RPC_BIND_FUNCTION(&listener::handle_accept, this, p, RPC__1));
 			}
@@ -258,7 +271,7 @@ namespace rpc{
 			tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 			tcp::resolver::iterator end;
 
-			peer_ptr new_peer(new peer(io_service_, p_functions));
+			peer_ptr new_peer(new this_type(io_service_, p_functions));
 			boost::system::error_code error = boost::asio::error::host_not_found;
 			while (error && endpoint_iterator != end)
 			{
@@ -335,12 +348,12 @@ namespace rpc{
 				throw peer_already_started();
 			}
 			peer_started = true;
+
+			void* ptr = &read_buffer;
+
 			//异步读。一个包接一个包地读。
-			boost::asio::async_read(socket_,
-				boost::asio::buffer(&read_size, sizeof(read_size)),
-				boost::asio::transfer_at_least(sizeof(read_size)),
-				RPC_BIND_FUNCTION(&peer::on_received_packet_size, shared_from_this(), RPC__1)
-				);
+			socket_.async_read( read_buffer,
+				RPC_BIND_FUNCTION( &peer::on_received_packet, shared_from_this(), RPC__1 ) );
 
 			// call back.
 			if ( on_peer_started ) on_peer_started();
@@ -349,50 +362,13 @@ namespace rpc{
     private:
         boost::recursive_mutex mtx;
 
-		packet_id min_usable_id;
-
-        packet_id get_usable_packet_id()
-		{
-            return ++min_usable_id;
-        }
-
-		void on_received_packet_size(const boost::system::error_code& err)
-		{
-			boost::recursive_mutex::scoped_lock lck(mtx);
-			if (err)
-			{
-				close();
-				return;
-			}
-			read_buffer.resize(read_size);
-			boost::asio::async_read(socket_, 
-				boost::asio::buffer(&read_buffer[0], read_buffer.size()),
-				boost::asio::transfer_at_least(read_size),
-				RPC_BIND_FUNCTION(&peer::on_received_packet, this->shared_from_this(), RPC__1)
-			);
-		}
-
 		void put_buffer_into_write_queue(buffer_ptr buf)
 		{
-			size_t write_size = (*buf).size();
-			buffer_ptr write_size_buf_ptr(new buffer_type());
-			write_size_buf_ptr->resize(sizeof(size_t));
-			std::memcpy( &(*write_size_buf_ptr)[0], &write_size, (int)sizeof(size_t) );
-
-			//注意，是先写包大小、后写包数据。
-			write_buf_queue.push(write_size_buf_ptr);
-			write_buf_queue.push(buf);
-
-			//尝试获得写锁。
-			if (write_mutex.try_lock())
-			{
-				//如果获得了，说明没有在写数据。那么开始写。
-				check_queue_and_write();
-			}
-			//没有获得，说明已经有异步写操作了。这次放入的数据将会被已有的异步写操作写入socket_中。
+			socket_.async_write( *buf,
+				RPC_BIND_FUNCTION( &this_type::on_write_finished, shared_from_this(), RPC__1 ) );
 		}
 
-        void on_received_packet(const boost::system::error_code& err)
+        void on_received_packet( const boost::system::error_code& err )
         {
             boost::recursive_mutex::scoped_lock lck(mtx);
             if (err)
@@ -429,73 +405,40 @@ namespace rpc{
             }
 			else
 			{
-                if ( !id2serializerqueue.empty() )
+                if ( !serializerqueue.empty() )
                 {
-                    id2serializerqueue.front()->parsePacket( buff, iar );
-                    if(!id2serializerqueue.empty())
-						id2serializerqueue.pop();
+                    serializerqueue.front()->parsePacket( buff, iar );
+                    if(!serializerqueue.empty())
+						serializerqueue.pop();
                 }
 				else
 				{
 					throw request_result_not_match();
 				}
 			}
-			boost::asio::async_read(socket_,
-				boost::asio::buffer(&read_size, sizeof(read_size)),
-				boost::asio::transfer_at_least(sizeof(read_size)),
-				RPC_BIND_FUNCTION(&peer::on_received_packet_size, shared_from_this(), RPC__1)
-				);
+
+			socket_.async_read( read_buffer,
+				RPC_BIND_FUNCTION( &peer::on_received_packet, shared_from_this(), RPC__1 ) );
         }
 
 		void on_socket_closed()
 		{
-			while ( !id2serializerqueue.empty() )
+			while ( !serializerqueue.empty() )
 			{
-				id2serializerqueue.front()->call_handler_with_error(remote_call_error(remote_call_error::connection_error, 
+				serializerqueue.front()->call_handler_with_error(remote_call_error(remote_call_error::connection_error, 
 					"The connection has been closed."));
-				id2serializerqueue.pop();
+				serializerqueue.pop();
 			}
 		}
 
-		//不断地将队列中的数据逐个写入socket_中。
-		void check_queue_and_write()
+		void on_write_finished( const boost::system::error_code& err )
 		{
-			if (!peer_started)
-			{
-				return;				//当peer结束时，也直接返回不再去写余下的数据。
-			}
-			boost::recursive_mutex::scoped_lock lck(mtx);
-			if (!write_buf_queue.empty())
-			{
-				buffer_ptr write_buf_ptr = write_buf_queue.front();
-				write_buf_queue.pop();
-				boost::asio::async_write(
-					socket_,
-					boost::asio::buffer(*write_buf_ptr, write_buf_ptr->size()),
-					boost::asio::transfer_all(),
-					RPC_BIND_FUNCTION(&peer::on_write_finished, shared_from_this(), RPC__1, write_buf_ptr)
-					);
-			}
-			else
-			{
-				//写队列空了：释放写锁。
-				write_mutex.unlock();
-			}
-		}
-
-		void on_write_finished(const boost::system::error_code& err, buffer_ptr strmbuf)
-		{
-			if (!peer_started)
-			{
-				return;				//当peer结束时，也直接返回不再去写余下的数据。
-			}
 			boost::recursive_mutex::scoped_lock lck(mtx);
 			if (err)
 			{
 				close();
 				return;
 			}
-			check_queue_and_write();
 		}
 
 	public:
@@ -517,7 +460,7 @@ namespace rpc{
 				std::ostringstream strm;
 				oarchive strm_buf_oar( strm, detail::archive_flags );
 				strm_buf_oar << packet(true, remote_call_error(), func_id);
-				id2serializerqueue.push(detail::RetValUnserializerPtr( new detail::RetValUnserializer<RetType>( handler ) ) );
+				serializerqueue.push(detail::RetValUnserializerPtr( new detail::RetValUnserializer<RetType>( handler ) ) );
 				*write_buf_ptr = strm.str();
 				put_buffer_into_write_queue( write_buf_ptr );
 			}
@@ -543,7 +486,7 @@ namespace rpc{
 				packet pak(true, remote_call_error(), func_id);\
 				oar<<pak;
 #define remoteCall_END \
-				id2serializerqueue.push(detail::RetValUnserializerPtr(new detail::RetValUnserializer<RetType>(handler)));\
+				serializerqueue.push(detail::RetValUnserializerPtr(new detail::RetValUnserializer<RetType>(handler)));\
 				*write_buf_ptr = strm.str();\
 				put_buffer_into_write_queue(write_buf_ptr);\
 			}else{\
@@ -587,6 +530,4 @@ namespace rpc{
 		remoteCall_END;
 
 	};
-	typedef peer::peer_ptr peer_ptr;
-	typedef peer::peer_weak_ptr peer_weak_ptr;
 }
