@@ -283,10 +283,20 @@ namespace rpc{
 				{
 					(*itr).second->unserializeAndCall(iar_params, oar_result);
 				}
-				catch( const boost::archive::archive_exception& e )
+				catch ( const boost::archive::archive_exception& e )
 				{
 					oar_result << packet( false, remote_call_error(remote_call_error::func_call_error,
 						"Invalid parameter: \""+std::string( e.what() )+"\"."), std::string() );
+				}
+				catch ( const std::exception& e )
+				{
+					oar_result << packet( false, remote_call_error(remote_call_error::func_call_error,
+						"Exception: \""+std::string( e.what() )+"\"."), std::string() );
+				}
+				catch ( ... )
+				{
+					oar_result << packet( false, remote_call_error(remote_call_error::func_call_error,
+						"Unknown exception." ), std::string() );
 				}
             }
 			else
