@@ -25,6 +25,7 @@ typedef boost::asio::ip::tcp::socket connection_base;
 /// The connection class provides serialization primitives on top of a socket.
 class connection : public connection_base
 {
+	static const unsigned int archive_flags = boost::archive::no_header;
 	typedef boost::archive::binary_oarchive oar;
 	typedef boost::archive::binary_iarchive iar;
 	typedef boost::shared_ptr<std::string> buffer_ptr;
@@ -56,7 +57,7 @@ public:
 		out.push(boost::iostreams::back_inserter(outbound_data_));
 
 		{
-			oar oa(out);
+			oar oa(out, archive_flags);
 			oa << t;
 		}// archive have to be closed before out.pop()
 
@@ -199,7 +200,7 @@ private:
 			in.push(boost::make_iterator_range(*dataPtr));
 
 			{
-				iar ia(in);
+				iar ia(in, archive_flags);
 				ia >> t;
 			}
 		}
