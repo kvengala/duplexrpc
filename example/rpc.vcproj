@@ -251,34 +251,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<Filter
-			Name="rpc"
-			>
-			<File
-				RelativePath=".\rpc\connection.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rpc\rpc.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rpc\rpc_common.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rpc\rpc_function_set.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rpc\rpc_interface.hpp"
-				>
-			</File>
-			<File
-				RelativePath=".\rpc\rpc_peer.hpp"
-				>
-			</File>
-		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
