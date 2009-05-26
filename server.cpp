@@ -77,6 +77,7 @@ public:
 		int i = 5;
 		conn->got_void_string( i, s, bind( &Server::check_client_call, this, _1, i, s ) );
 	}
+
 	void check_client_call( const remote_call_error& err, int i, const string& sent_content )
 	{
 		mutex::scoped_lock lck(results_write_mutex);
