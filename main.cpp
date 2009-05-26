@@ -3,6 +3,9 @@
 #include "client.h"
 #include <boost/thread.hpp>
 
+ResultsType results;
+boost::mutex results_write_mutex;
+
 void main()
 {
 	boost::thread th1(&start_server);
