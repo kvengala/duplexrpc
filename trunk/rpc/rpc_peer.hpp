@@ -342,7 +342,6 @@ namespace rpc{
 		*/
 		void start()
 		{
-			boost::recursive_mutex::scoped_lock lck(mtx);
 			if (peer_started)
 			{
 				throw peer_already_started();

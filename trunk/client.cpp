@@ -43,7 +43,6 @@ public:
 		}
 
 		cout << t << ": " << results[t].successCount << " OK, " << results[t].failureCount << " failed." << endl;
-		if ( i==5 ) conn->close();
 	}
 
 #define PARAMS 
@@ -59,30 +58,58 @@ public:
 			conn->void ## W( PARAMS, bind( &Client::check_void_call, this, _1 ) );\
 		}
 
-	void on_connection_in_place()
+	void voidCall0()
 	{
 		expecteds[0] = "echo0";
 		conn->void0( bind( &Client::check_void_call, this, _1 ) );
+	}
 
+	void voidCall1()
+	{
 #undef PARAMS
 #define PARAMS "猪"
-		VOID_CALL(1);
+	VOID_CALL(1);
+	}
 
+	void voidCall2()
+	{
 #undef PARAMS
 #define PARAMS "你就是", "猪"
-		VOID_CALL(2);
+	VOID_CALL(2);
+	}
 
+	void voidCall3()
+	{
 #undef PARAMS
 #define PARAMS "你就是", "一头", "猪"
-		VOID_CALL(3);
+	VOID_CALL(3);
+	}
 
+	void voidCall4()
+	{
 #undef PARAMS
 #define PARAMS "你就是", "一头", "小笨", "猪"
-		VOID_CALL(4);
+	VOID_CALL(4);
+	}
 
+	void voidCall5()
+	{
 #undef PARAMS
 #define PARAMS "你就是", "一头", "挫到不行的", "小笨", "猪"
-		VOID_CALL(5);
+	VOID_CALL(5);
+	}
+
+	void on_connection_in_place()
+	{
+		thread_group threads;
+		threads.create_thread( bind( &Client::voidCall0, this ) );
+		threads.create_thread( bind( &Client::voidCall1, this ) );
+		threads.create_thread( bind( &Client::voidCall2, this ) );
+		threads.create_thread( bind( &Client::voidCall3, this ) );
+		threads.create_thread( bind( &Client::voidCall4, this ) );
+		threads.create_thread( bind( &Client::voidCall5, this ) );
+
+		threads.join_all();
 	}
 
 	void check_void_call( const remote_call_error& err )
