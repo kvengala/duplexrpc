@@ -10,7 +10,9 @@ namespace rpc
 	class ServerPeer
 	{
 	public:
-		virtual void on_connection_init( const RPC_SHARED_PTR<InterfaceT>& conn )
+		typedef RPC_SHARED_PTR<InterfaceT> InterfacePtr;
+	public:
+		virtual void on_connected( const InterfacePtr& conn )
 		{
 			// Do some initialization work here, and save conn ptr to a local variable.
 			// DONT use conn to call RPC functions here; because RPC facilities are not yet ready.
@@ -28,14 +30,18 @@ namespace rpc
 			// Invoked after this connection closed.
 			// Do some clean-up work here.
 		}
+
+		virtual ~ServerPeer(){}
 	} ;
 
 	template < class InterfaceT >
 	class ClientPeer
 	{
 	public:
+		typedef RPC_SHARED_PTR<InterfaceT> InterfacePtr;
+	public:
 		virtual void on_connected( const boost::system::error_code& err,
-			const RPC_SHARED_PTR<InterfaceT>& conn )
+			const InterfacePtr& conn )
 		{
 			// Connection succeeded if ( !err ) .
 			// Do some initialization work here, and save conn ptr to a local variable.
@@ -52,6 +58,8 @@ namespace rpc
 			// Invoked after this connection closed.
 			// Do some clean-up work here.
 		}
+
+		virtual ~ClientPeer(){}
 	} ;
 };
 
@@ -77,7 +85,7 @@ public:\
 	{\
 		this_type_shared_ptr conn( new this_type( this_peer ) );\
 		RPC_SHARED_PTR<ObjT> obj( new ObjT() );\
-		obj->on_connection_init( conn );\
+		obj->on_connected( conn );\
 		rpc::function_set_ptr p_functions( new rpc::function_set() );\
 		this_peer->on_peer_started = RPC_BIND_FUNCTION( &ObjT::on_connection_in_place, obj );\
 		this_peer->on_peer_closed = RPC_BIND_FUNCTION( &ObjT::on_connection_closed, obj );

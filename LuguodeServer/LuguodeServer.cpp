@@ -23,7 +23,7 @@ private:
 	LuguodePeerWeakPtr stranger;
 	bool talking;
 public:
-	void on_connection_init( const shared_ptr<LuguodeInterface>& conn )
+	void on_connected( const shared_ptr<LuguodeInterface>& conn )
 	{
 		talking = false;
 		client_connection = conn;
