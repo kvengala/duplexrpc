@@ -6,7 +6,7 @@
 #include "interface.h"
 using namespace boost;
 
-class Server : public rpc::ServerPeer<Interface>
+class ServerPeer : public rpc::ServerPeer<Interface>
 {
 	shared_ptr<Interface> conn;
 public:
@@ -15,7 +15,7 @@ public:
 		conn = conn_;
 	}
 
-	Server(){}
+	ServerPeer(){}
 
 	string echo0()
 	{
@@ -97,5 +97,5 @@ public:
 
 void start_server()
 {
-	Interface::listen<Server>( 7844 );
+	Interface::listen<ServerPeer>( 7844 );
 }
